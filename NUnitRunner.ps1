@@ -1,11 +1,15 @@
-param($buildDirectory = $(throw "build results directory must be provided"))
+param(
+	$buildDirectory = $(throw "build results directory must be provided"),
+	$testAssmPattern = "*.Specs.dll" # replace with *.dll to test everything -- this is quite slow!
+)
 # Test against all the dlls we can find, report any failures.
 #todo: configurable pattern for test assemblies?
 
-$nunit = "${env:ProgramFiles(x86)}\NUnit 2.5.10\bin\net-2.0\nunit-console-x86.exe"
+$availableNunits = @(ls @("${env:ProgramFiles(x86)}\NUnit*\bin\net-2.0\nunit-console-x86.exe", "${env:ProgramFiles}\NUnit*\bin\net-2.0\nunit-console-x86.exe"))
+$nunit = $availableNunits[0]
 $results = "$buildDirectory\_PoshNUnit_Results.xml"
 
-$dlls = ls -Filter "*.Specs.dll" -Path $buildDirectory
+$dlls = ls -Filter $testAssmPattern -Path $buildDirectory
 
 if (Test-Path $results) { rm $results }
 

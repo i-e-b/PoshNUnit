@@ -4,7 +4,8 @@ param($changedFile = $(throw "change triggering file must be provided"))
 # pass on to a test running script.
 # As far as possible, this script should show nothing on the console.
 
-$ms_build = "$env:windir\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe" # update this with the version of .Net to use #todo: autodetect for each .sln
+$ms_build_versions = @(ls "${env:windir}\Microsoft.NET\Framework*\v4.*\MSBuild.exe")
+$ms_build = $ms_build_versions[0] # update this with the version of .Net to use #todo: autodetect for each .sln
 
 function CreateTempDir($slnFile) {
 	$name = Split-Path -Leaf $slnFile

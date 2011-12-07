@@ -7,12 +7,28 @@ $results = "$buildDirectory\_PoshNUnit_Results.xml"
 
 $dlls = ls -Filter "*.Specs.dll" -Path $buildDirectory
 
+if (Test-Path $results) { rm $results }
+
 pushd $buildDirectory
 & $nunit $dlls /xml=$results | out-null
 popd
 
-#todo: read the results xml for failed tests, output the name to the screen.
+Write-Host "Reading results: " -NoNewline
 
-# for now, copy results to a permanent location
-mv $results -Destination "C:\temp\"
+$tests = Select-Xml -Path "$results" -Xpath '//test-case' | %{ $_.Node }
+$passed = 0
+$failed = 0
+$other = 0
+$tests | %{
+	if ($_.success -eq "True") {$passed++}
+	elseif ($_.success -eq "False") {$failed++}
+	else {$other++}
+}
+Write-Host "$passed tests passed " -fo green -NoNewline
+if ($other -gt 0) {Write-Host "$other inconclusive or ignored " -fo yellow -NoNewline}
+if ($failed -gt 0) {Write-Host "$failed failed " -fo red -NoNewLine}
+Write-Host ";"
+$tests | %{ if ($_.success -eq "False") {
+	Write-Host $_.name -fo red
+}}
 

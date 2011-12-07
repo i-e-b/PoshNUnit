@@ -2,13 +2,6 @@ param($watchPath = $(throw "Watch path is required"), $triggerScript = $(throw "
 # watch a file changes in the current directory, 
 # execute all tests when a file is changed or renamed
 
-function ResetHost($msg) {
-	Clear-Host
-	[Console]::SetCursorPosition(0,0)
-	[Console]::Write($msg)
-	[Console]::SetCursorPosition(0,1)
-}
-
 $watcher = New-Object System.IO.FileSystemWatcher
 $watcher.Path = $watchPath
 $watcher.IncludeSubdirectories = $true
@@ -17,7 +10,11 @@ $watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite -bor [System.IO.Not
 
 $watch_filter = [System.IO.WatcherChangeTypes]::Changed -bor [System.IO.WatcherChangeTypes]::Renamed -bOr [System.IO.WatcherChangeTypes]::Created -bOr [System.IO.WatcherChangeTypes]::Deleted
 
-Write-Host "Watching $watchPath for changes"
+(Get-Host).UI.RawUI.WindowTitle = "PoshNUnit"
+Write-Host "Watching $watchPath for changes. Press [ctrl]-C to exit"
+
+$ignore = (".svn", ".suo", ".user", "_resharper", ".cache") #todo: push out to a config file
+
 
 while($true){
 	$result = $watcher.WaitForChanged($watch_filter, 1000);
@@ -25,10 +22,15 @@ while($true){
 		continue;
 	}
 
-	if ($result.Name.Contains(".svn")) { continue; }
+	$ignore | ?{ $result.Name.ToLower().Contains($_) } | %{continue}
 
-	Write-Host "Change in $($result.Name)"
+	Clear-Host
+	$time = [System.DateTime]::Now
+	Write-Host "$time -- Change in $($result.Name)"
+
 	& $triggerScript "$watchPath\$($result.Name)"
-	Write-Host "Continuing to watch $watchPath"
+
+	$time = [System.DateTime]::Now
+	Write-Host "$time -- Continuing to watch $watchPath. Press [ctrl]-C to exit"
 }
 

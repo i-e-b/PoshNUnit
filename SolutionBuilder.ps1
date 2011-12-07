@@ -8,13 +8,20 @@ $ms_build = "$env:windir\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe" # upd
 
 function CreateTempDir($slnFile) {
 	$name = Split-Path -Leaf $slnFile
-	$tmp = [System.IO.Path]::Combine($env:Temp, "PoshNUnit\$name")
-	mkdir $tmp | out-null
+	$hash = $slnFile.GetHashCode().ToString("x") # help prevent collision with same named solutions.
+	$tmp = [System.IO.Path]::Combine($env:Temp, "PoshNUnit\$name_$hash")
+	if (-not (Test-Path $tmp)) { mkdir $tmp | out-null }
 	$tmp
 }
 
 function BuildToDirectory($slnFile, $targetDirectory) {
 	& $ms_build "$slnFile" /p:OutDir="$targetDirectory\" | out-null
+	if ($LASTEXITCODE -ne 0) {
+		Write-Host "Build FAILED" -fo red
+		exit 1
+	} else {
+		Write-Host "Build OK" -fo green
+	}
 }
 
 function FindNearestSolution($src) {
@@ -23,10 +30,8 @@ function FindNearestSolution($src) {
 		$trace = $src
 		while ($matchCount -eq 0) {
 			$trace = Split-Path -parent $trace
-			Write-Host "looking in $trace"
 			$match= ls -Filter "*.sln" -Path $trace
 			$matchCount = ($match| Measure-Object).Count
-			Write-Host "found $matchCount solutions"
 		}
 		if ($matchCount -gt 1) {throw "More than one solution at $trace"}
 	} catch {
@@ -35,8 +40,6 @@ function FindNearestSolution($src) {
 	}
 	"$trace\$match"
 }
-
-Write-Host "Looking for nearest parent solution for $changedFile"
 
 $sln = FindNearestSolution($changedFile)
 $output = CreateTempDir($sln)

@@ -6,8 +6,9 @@ param($changedFile = $(throw "change triggering file must be provided"))
 
 $ms_build = "$env:windir\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe" # update this with the version of .Net to use #todo: autodetect for each .sln
 
-function CreateTempDir {
-	$tmp = [System.IO.Path]::Combine($env:Temp, [System.Guid]::NewGuid())
+function CreateTempDir($slnFile) {
+	$name = Split-Path -Leaf $slnFile
+	$tmp = [System.IO.Path]::Combine($env:Temp, "PoshNUnit\$name")
 	mkdir $tmp | out-null
 	$tmp
 }
@@ -17,27 +18,30 @@ function BuildToDirectory($slnFile, $targetDirectory) {
 }
 
 function FindNearestSolution($src) {
-	$matchCount = 0
-	$trace = $src
-	while ($matchCount -eq 0) {
-		$trace = Split-Path -parent $trace
-		$match= ls -Filter "*.sln" -Path $trace
-		$matchCount = ($match| Measure-Object).Count
+	try {
+		$matchCount = 0
+		$trace = $src
+		while ($matchCount -eq 0) {
+			$trace = Split-Path -parent $trace
+			Write-Host "looking in $trace"
+			$match= ls -Filter "*.sln" -Path $trace
+			$matchCount = ($match| Measure-Object).Count
+			Write-Host "found $matchCount solutions"
+		}
+		if ($matchCount -gt 1) {throw "More than one solution at $trace"}
+	} catch {
+		throw $_
+		exit 1
 	}
-	if ($matchCount -gt 1) {throw "More than one solution at $trace"}
-	
 	"$trace\$match"
 }
 
-$output = CreateTempDir
+Write-Host "Looking for nearest parent solution for $changedFile"
+
 $sln = FindNearestSolution($changedFile)
+$output = CreateTempDir($sln)
 
 BuildToDirectory -slnFile $sln -targetDirectory $output
 
 return $output
-
-# next steps... run .dll files in the output against NUnit and coallate the results.
-#ls -Filter "*.dll" -Path $output
-#ls -Filter "*.Specs.dll" -Path $output
-#rm -Recurse -Force $output
 

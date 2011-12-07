@@ -17,14 +17,18 @@ $watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite -bor [System.IO.Not
 
 $watch_filter = [System.IO.WatcherChangeTypes]::Changed -bor [System.IO.WatcherChangeTypes]::Renamed -bOr [System.IO.WatcherChangeTypes]::Created -bOr [System.IO.WatcherChangeTypes]::Deleted
 
-ResetHost "Watching $watchPath for changes"
+Write-Host "Watching $watchPath for changes"
 
 while($true){
 	$result = $watcher.WaitForChanged($watch_filter, 1000);
 	if($result.TimedOut){
 		continue;
 	}
-	ResetHost "Change in $($result.Name)"
-	& $triggerScript $result.Name
+
+	if ($result.Name.Contains(".svn")) { continue; }
+
+	Write-Host "Change in $($result.Name)"
+	& $triggerScript "$watchPath\$($result.Name)"
+	Write-Host "Continuing to watch $watchPath"
 }
 

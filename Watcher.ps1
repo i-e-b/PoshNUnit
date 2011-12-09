@@ -13,7 +13,7 @@ $watch_filter = [System.IO.WatcherChangeTypes]::Changed -bor [System.IO.WatcherC
 (Get-Host).UI.RawUI.WindowTitle = "PoshNUnit"
 Write-Host "Watching $watchPath for changes. Press [ctrl]-C to exit"
 
-$ignore = (".svn", ".suo", ".user", "_resharper", ".cache") #todo: push out to a config file
+$ignore = (".svn", ".suo", ".user", "_resharper", ".cache", "\bin\", "\obj\") #todo: push out to a config file
 
 
 while($true){

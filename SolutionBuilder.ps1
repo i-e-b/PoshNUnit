@@ -31,18 +31,20 @@ function FindNearestSolution($src) {
 		$trace = $src
 		while ($matchCount -eq 0) {
 			$trace = Split-Path -parent $trace
+			if (-not (Test-Path $trace)) {continue}
 			$match= ls -Filter "*.sln" -Path $trace
 			$matchCount = ($match| Measure-Object).Count
 		}
 		if ($matchCount -gt 1) {throw "More than one solution at $trace"}
 	} catch {
-		throw $_
-		exit 1
+		Write-Host "Could not find a solution to build" -fo red
+		return
 	}
 	"$trace\$match"
 }
 
 $sln = FindNearestSolution($changedFile)
+if (!$sln) {return}
 $output = CreateTempDir($sln)
 
 BuildToDirectory -slnFile $sln -targetDirectory $output

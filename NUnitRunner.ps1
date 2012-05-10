@@ -1,12 +1,16 @@
 param(
 	$buildDirectory = $(throw "build results directory must be provided"),
-	$testAssmPattern = "*Specs.dll" # replace with *.dll to test everything -- this is quite slow!
+	$testAssmPattern = "*.dll" # replace with *.dll to test everything -- this is quite slow!
 )
 # Test against all the dlls we can find, report any failures.
 #todo: configurable pattern for test assemblies?
 
-$availableNunits = @(ls @("${env:ProgramFiles(x86)}\NUnit*\bin\net-2.0\nunit-console-x86.exe", "${env:ProgramFiles}\NUnit*\bin\net-2.0\nunit-console-x86.exe"))
-$nunit = $availableNunits[0]
+$PossibleNunits = @(
+	"${env:ProgramFiles(x86)}\NUnit*\bin\nunit-console.exe",
+	"${env:ProgramFiles}\NUnit*\bin\net-4.0\nunit-console-x86.exe",
+	"${env:ProgramFiles(x86)}\NUnit*\bin\net-4.0\nunit-console-x86.exe");
+
+$nunit = $PossibleNunits | %{ ls $_ } | ?{ Test-Path $_ } | select-object -first 1
 if (-not (Test-Path $nunit)) {
 	Write-Host "No NUnit install found" -fo red
 	return

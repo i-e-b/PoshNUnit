@@ -4,8 +4,11 @@ param($changedFile = $(throw "change triggering file must be provided"))
 # pass on to a test running script.
 # As far as possible, this script should show nothing on the console.
 
-$ms_build_versions = @(ls "${env:windir}\Microsoft.NET\Framework*\v4.*\MSBuild.exe")
-$ms_build = $ms_build_versions[0] # update this with the version of .Net to use #todo: autodetect for each .sln
+
+if ([IntPtr]::Size -eq 8) {$type = "64"}
+
+$ms_build_versions = @(ls "${env:windir}\Microsoft.NET\Framework$type\v4.*\MSBuild.exe")
+$ms_build = $ms_build_versions[0]
 
 function CreateTempDir($slnFile) {
 	$name = Split-Path -Leaf $slnFile
@@ -16,6 +19,7 @@ function CreateTempDir($slnFile) {
 }
 
 function BuildToDirectory($slnFile, $targetDirectory) {
+	Write-Host "Building with $ms_build to $targetDirectory"
 	& $ms_build "$slnFile" /p:OutDir="$targetDirectory\" | out-null
 	if ($LASTEXITCODE -ne 0) {
 		Write-Host "Build FAILED" -fo red
